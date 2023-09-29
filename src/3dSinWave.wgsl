@@ -11,5 +11,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var z = positionBuffer.positions[particleId * u32(3) + u32(2)];
     var distance = sqrt(x * x + z * z);
 
-    positionBuffer.positions[particleId * u32(3) + u32(1)] = sin(distance);
+    positionBuffer.positions[particleId * u32(3) + u32(1)] = sin(distance * 20.0 + 3.0) * 0.05;
 }
