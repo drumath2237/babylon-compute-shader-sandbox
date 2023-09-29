@@ -104,8 +104,8 @@ const main = async () => {
     return p;
   };
 
-  setInterval(async () => {
-    time += 0.15;
+  scene.registerBeforeRender(async () => {
+    time += 0.1;
     waveParamsUniformBuffer.updateFloat("time", time);
     waveParamsUniformBuffer.update();
 
@@ -117,7 +117,7 @@ const main = async () => {
     positionBuffer.set(new Float32Array(res.buffer));
 
     pointCloud.setParticles();
-  }, 1000 / 60);
+  });
 };
 
 main();
