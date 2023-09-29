@@ -1,9 +1,9 @@
-import { Playground } from "./createScene";
 import "./style.css";
 import {
   CloudPoint,
   ComputeShader,
   PointsCloudSystem,
+  Scene,
   StorageBuffer,
   Vector3,
   WebGPUEngine,
@@ -25,7 +25,8 @@ const main = async () => {
 
   await engine.initAsync();
 
-  const scene = await Playground.CreateSceneAsync(engine, renderCanvas);
+  const scene = new Scene(engine);
+  scene.createDefaultCameraOrLight(true, true, true);
 
   window.addEventListener("resize", () => {
     engine.resize();
@@ -46,14 +47,14 @@ const main = async () => {
     }
   );
 
-  const PARTICLE_ONE_SIDE = 100;
+  const PARTICLE_ONE_SIDE = 500;
   const PARTICLE_COUNT = PARTICLE_ONE_SIDE * PARTICLE_ONE_SIDE;
 
   const positionBuffer = new Float32Array(PARTICLE_COUNT * 3);
   for (let i = 0; i < PARTICLE_COUNT; i++) {
-    positionBuffer[i * 3] = randomNumberBetween(-1, 1);
+    positionBuffer[i * 3] = randomNumberBetween(-10, 10);
     positionBuffer[i * 3 + 1] = 0;
-    positionBuffer[i * 3 + 2] = randomNumberBetween(-1, 1);
+    positionBuffer[i * 3 + 2] = randomNumberBetween(-10, 10);
   }
   const positionStorage = new StorageBuffer(engine, positionBuffer.byteLength);
   positionStorage.update(positionBuffer);
@@ -75,6 +76,19 @@ const main = async () => {
     );
   });
   await pointCloud.buildMeshAsync();
+
+  pointCloud.updateParticle = (p: CloudPoint) => {
+    p.position = new Vector3(
+      positionBuffer[p.idx * 3] / 10.0,
+      positionBuffer[p.idx * 3 + 1] / 10.0,
+      positionBuffer[p.idx * 3 + 2] / 10.0
+    );
+    return p;
+  };
+
+  setInterval(() => {
+    pointCloud.setParticles();
+  }, 1000 / 30);
 };
 
 main();
