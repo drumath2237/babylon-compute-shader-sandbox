@@ -10,7 +10,11 @@ const main = async () => {
     return;
   }
 
-  const engine = new Engine(renderCanvas, true);
+  const engine = new WebGPUEngine(renderCanvas, {
+    antialias: true,
+  });
+
+  await engine.initAsync();
 
   const scene = Playground.CreateScene(engine, renderCanvas);
 
@@ -24,6 +28,7 @@ const main = async () => {
 };
 
 main();
+
 
 
 
