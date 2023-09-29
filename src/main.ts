@@ -5,10 +5,11 @@ import {
   PointsCloudSystem,
   Scene,
   StorageBuffer,
+  UniformBuffer,
   Vector3,
   WebGPUEngine,
 } from "@babylonjs/core";
-import sinWaveComputeShader from "./3dSinWave.wgsl?raw";
+import computeShaderSource from "./3dSinWave.wgsl?raw";
 import { randomNumberBetween } from "./utils";
 
 const main = async () => {
@@ -22,7 +23,6 @@ const main = async () => {
   const engine = new WebGPUEngine(renderCanvas, {
     antialias: true,
   });
-
   await engine.initAsync();
 
   const scene = new Scene(engine);
@@ -36,18 +36,32 @@ const main = async () => {
     scene.render();
   });
 
-  const sinWave = new ComputeShader(
+  //========================================================
+
+  let time = 5;
+
+  const sinWaveComputeShader = new ComputeShader(
     "3d sin wave",
     engine,
-    { computeSource: sinWaveComputeShader },
+    { computeSource: computeShaderSource },
     {
       bindingsMapping: {
-        positionBuffer: { group: 0, binding: 0 },
+        params: { group: 0, binding: 0 },
+        positionBuffer: { group: 0, binding: 1 },
       },
     }
   );
 
-  const PARTICLE_ONE_SIDE = 500;
+  const waveParamsUniformBuffer = new UniformBuffer(
+    engine,
+    undefined,
+    undefined,
+    "params"
+  );
+  waveParamsUniformBuffer.addUniform("time", 1);
+  waveParamsUniformBuffer.updateFloat("time", time);
+
+  const PARTICLE_ONE_SIDE = 300;
   const PARTICLE_COUNT = PARTICLE_ONE_SIDE * PARTICLE_ONE_SIDE;
 
   const positionBuffer = new Float32Array(PARTICLE_COUNT * 3);
@@ -59,11 +73,15 @@ const main = async () => {
   const positionStorage = new StorageBuffer(engine, positionBuffer.byteLength);
   positionStorage.update(positionBuffer);
 
-  sinWave.setStorageBuffer("positionBuffer", positionStorage);
+  sinWaveComputeShader.setUniformBuffer("params", waveParamsUniformBuffer);
+  sinWaveComputeShader.setStorageBuffer("positionBuffer", positionStorage);
 
-  await sinWave.dispatchWhenReady(PARTICLE_ONE_SIDE, PARTICLE_ONE_SIDE);
-  const positions = await positionStorage.read();
-  positionBuffer.set(new Float32Array(positions.buffer));
+  await sinWaveComputeShader.dispatchWhenReady(
+    PARTICLE_ONE_SIDE,
+    PARTICLE_ONE_SIDE
+  );
+  const res = await positionStorage.read();
+  positionBuffer.set(new Float32Array(res.buffer));
 
   const pointCloud = new PointsCloudSystem("pointCloud", 3, scene, {
     updatable: true,
@@ -79,17 +97,27 @@ const main = async () => {
 
   pointCloud.updateParticle = (p: CloudPoint) => {
     p.position = new Vector3(
-      positionBuffer[p.idx * 3] / 10.0,
-      positionBuffer[p.idx * 3 + 1] / 10.0,
-      positionBuffer[p.idx * 3 + 2] / 10.0
+      positionBuffer[p.idx * 3] / 20.0,
+      positionBuffer[p.idx * 3 + 1] / 20.0,
+      positionBuffer[p.idx * 3 + 2] / 20.0
     );
     return p;
   };
 
-  setInterval(() => {
+  setInterval(async () => {
+    time += 0.15;
+    waveParamsUniformBuffer.updateFloat("time", time);
+    waveParamsUniformBuffer.update();
+
+    await sinWaveComputeShader.dispatchWhenReady(
+      PARTICLE_ONE_SIDE,
+      PARTICLE_ONE_SIDE
+    );
+    const res = await positionStorage.read();
+    positionBuffer.set(new Float32Array(res.buffer));
+
     pointCloud.setParticles();
-  }, 1000 / 30);
+  }, 1000 / 60);
 };
 
 main();
-
