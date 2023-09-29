@@ -1,6 +1,6 @@
 import { Playground } from "./createScene";
 import "./style.css";
-import { Engine, WebGPUEngine } from "@babylonjs/core";
+import { WebGPUEngine } from "@babylonjs/core";
 
 const main = async () => {
   const renderCanvas = document.getElementById(
@@ -16,7 +16,7 @@ const main = async () => {
 
   await engine.initAsync();
 
-  const scene = Playground.CreateScene(engine, renderCanvas);
+  const scene = await Playground.CreateSceneAsync(engine, renderCanvas);
 
   window.addEventListener("resize", () => {
     engine.resize();
@@ -28,7 +28,4 @@ const main = async () => {
 };
 
 main();
-
-
-
 

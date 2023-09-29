@@ -1,55 +1,51 @@
-import * as BABYLON from '@babylonjs/core';
+import {
+  Engine,
+  Scene,
+  FreeCamera,
+  Vector3,
+  HemisphericLight,
+  PointsCloudSystem,
+  MeshBuilder,
+  CloudPoint,
+} from "@babylonjs/core";
+import { randomNumberBetween } from "./utils";
 
 class Playground {
-  public static CreateScene(
-    engine: BABYLON.Engine,
+  public static async CreateSceneAsync(
+    engine: Engine,
     canvas: HTMLCanvasElement
-  ): BABYLON.Scene {
-    // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine);
-
-    // This creates and positions a free camera (non-mesh)
-    var camera = new BABYLON.FreeCamera(
-      'camera1',
-      new BABYLON.Vector3(0, 5, -10),
-      scene
-    );
-
-    // This targets the camera to scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
-
-    // This attaches the camera to the canvas
-    camera.attachControl(canvas, true);
-
-    // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight(
-      'light1',
-      new BABYLON.Vector3(0, 1, 0),
-      scene
-    );
-
-    // Default intensity is 1. Let's dim the light a small amount
+  ): Promise<Scene> {
+    const scene = new Scene(engine);
+    const camera = new FreeCamera("camera1", new Vector3(0, 1, -2), scene);
+    camera.setTarget(Vector3.Zero());
+    camera.attachControl(true);
+    const light = new HemisphericLight("light1", new Vector3(0, 1, 0), scene);
     light.intensity = 0.7;
 
-    // Our built-in 'sphere' shape. Params: name, options, scene
-    var sphere = BABYLON.MeshBuilder.CreateSphere(
-      'sphere',
-      { diameter: 2, segments: 32 },
-      scene
-    );
+    const PARTICLE_COUNT = 100 * 100;
 
-    // Move the sphere upward 1/2 its height
-    sphere.position.y = 1;
+    const positionBuffer = new Float32Array(PARTICLE_COUNT * 3);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      positionBuffer[i * 3] = randomNumberBetween(-1, 1);
+      positionBuffer[i * 3 + 1] = 0;
+      positionBuffer[i * 3 + 2] = randomNumberBetween(-1, 1);
+    }
 
-    // Our built-in 'ground' shape. Params: name, options, scene
-    var ground = BABYLON.MeshBuilder.CreateGround(
-      'ground',
-      { width: 6, height: 6 },
-      scene
-    );
+    const pointCloud = new PointsCloudSystem("pointCloud", 3, scene, {
+      updatable: true,
+    });
+    pointCloud.addPoints(PARTICLE_COUNT, (p: CloudPoint, i: number) => {
+      p.position = new Vector3(
+        positionBuffer[i * 3],
+        positionBuffer[i * 3 + 1],
+        positionBuffer[i * 3 + 2]
+      );
+    });
+    await pointCloud.buildMeshAsync();
 
     return scene;
   }
 }
 
 export { Playground };
+
