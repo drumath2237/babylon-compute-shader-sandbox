@@ -61,6 +61,8 @@ const main = async () => {
   waveParamsUniformBuffer.addUniform("time", 1);
   waveParamsUniformBuffer.updateFloat("time", time);
 
+  sinWaveComputeShader.setUniformBuffer("params", waveParamsUniformBuffer);
+
   const PARTICLE_ONE_SIDE = 300;
   const PARTICLE_COUNT = PARTICLE_ONE_SIDE * PARTICLE_ONE_SIDE;
 
@@ -73,15 +75,7 @@ const main = async () => {
   const positionStorage = new StorageBuffer(engine, positionBuffer.byteLength);
   positionStorage.update(positionBuffer);
 
-  sinWaveComputeShader.setUniformBuffer("params", waveParamsUniformBuffer);
   sinWaveComputeShader.setStorageBuffer("positionBuffer", positionStorage);
-
-  await sinWaveComputeShader.dispatchWhenReady(
-    PARTICLE_ONE_SIDE,
-    PARTICLE_ONE_SIDE
-  );
-  const res = await positionStorage.read();
-  positionBuffer.set(new Float32Array(res.buffer));
 
   const pointCloud = new PointsCloudSystem("pointCloud", 3, scene, {
     updatable: true,
